@@ -1,11 +1,13 @@
 from bibgrafo.grafo_matriz_adj_dir import *
 from bibgrafo.grafo_exceptions import *
+from typing import List
 
 class MeuGrafo(GrafoMatrizAdjacenciaDirecionado):
-    def warshall(self):
-        """
-        Retorna a matriz de alcançabilidade de grafo
-        :return: Lista de listas preenchidas com 1, em caso de caminho entre vértices e com 0 caso contrário
+    def warshall(self) -> List[List]:
+        """Retorna a matriz de alcançabilidade de grafo
+
+        Returns:
+            matriz_clone(List[List])
         """
         matriz_clone = [[0 if len(self.M[j][i]) == 0 else 1 for i in range(len(self.M))] for j in range(len(self.M))]
         qt_termos = len(self.M)

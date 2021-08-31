@@ -1,49 +1,53 @@
+from __future__ import annotations
 from bibgrafo.aresta import Aresta
 from bibgrafo.grafo_lista_adjacencia import GrafoListaAdjacencia
 from bibgrafo.grafo_exceptions import *
-from collections import defaultdict
-from copy import deepcopy
+from collections import defaultdict, deque
 from itertools import combinations
+from typing import Dict, List, Union, Tuple
+from copy import deepcopy
 
 class MeuGrafo(GrafoListaAdjacencia):
 
-    def vertices_nao_adjacentes(self):
-        '''
-        Provê uma lista de vértices não adjacentes no grafo. A lista terá o seguinte formato: [X-Z, X-W, ...]
+    def vertices_nao_adjacentes(self) -> List[int]:
+        '''Provê uma lista de vértices não adjacentes no grafo. A lista terá o seguinte formato: [X-Z, X-W, ...].
         Onde X, Z e W são vértices no grafo que não tem uma aresta entre eles.
-        :return: Uma lista com os pares de vértices não adjacentes
+
+        Returns:
+            vertex_combinations(list)
         '''
-        permutations = []
-        for n1 in self.N:
-            for n2 in self.N:
-                if n1 != n2:
-                    v = n1 + "-" + n2
-                    if v not in permutations and v[::-1] not in permutations:
-                        permutations.append(v)
+        vertex_combinations = list(map(lambda x: x[0] + "-" + x[1], combinations(self.N, 2)))
+        
         for a in self.A:
             v = self.A[a].getV1() + "-" + self.A[a].getV2()
-            if v in permutations:
-                permutations.remove(v)
-            elif v[::-1] in permutations:
-                permutations.remove(v[::-1])
-        return permutations
+            if v in vertex_combinations:
+                vertex_combinations.remove(v)
+            elif v[::-1] in vertex_combinations:
+                vertex_combinations.remove(v[::-1])
+        return vertex_combinations
                 
-    def ha_laco(self):
-        '''
-        Verifica se existe algum laço no grafo.
-        :return: Um valor booleano que indica se existe algum laço.
+    def ha_laco(self) -> bool:
+        '''Verifica se existe algum laço no grafo.
+
+        Returns:
+            bool
         '''
         for a in self.A:
             if self.A[a].getV1() == self.A[a].getV2():
                 return True
         return False
 
-    def grau(self, V=''):
-        '''
-        Provê o grau do vértice passado como parâmetro
-        :param V: O rótulo do vértice a ser analisado
-        :return: Um valor inteiro que indica o grau do vértice
-        :raises: VerticeInvalidoException se o vértice não existe no grafo
+    def grau(self, V: str = '') -> int:
+        '''Provê o grau do vértice passado como parâmetro.
+
+        Args:
+            V (str, optional): O rótulo do vértice a ser analisado.
+        
+        Returns:
+            grau(int)
+        
+        Raises:
+            VerticeInvalidoException: Erro caso não existe o vértice no grafo.
         '''
         if V not in self.N:
             raise VerticeInvalidoException
@@ -56,10 +60,11 @@ class MeuGrafo(GrafoListaAdjacencia):
                     grau += 1
         return grau
 
-    def ha_paralelas(self):
-        '''
-        Verifica se há arestas paralelas no grafo
-        :return: Um valor booleano que indica se existem arestas paralelas no grafo.
+    def ha_paralelas(self) -> bool:
+        ''' Verifica se há arestas paralelas no grafo
+
+        Returns:
+            bool
         '''
         edges = []
         for a in self.A:
@@ -69,13 +74,18 @@ class MeuGrafo(GrafoListaAdjacencia):
             else:
                 edges.append(v)
         return False
+            
+    def arestas_sobre_vertice(self, V: str) -> List[str]:
+        '''Provê uma lista que contém os rótulos das arestas que incidem sobre o vértice passado como parâmetro
 
-    def arestas_sobre_vertice(self, V):
-        '''
-        Provê uma lista que contém os rótulos das arestas que incidem sobre o vértice passado como parâmetro
-        :param V: O vértice a ser analisado
-        :return: Uma lista os rótulos das arestas que incidem sobre o vértice
-        :raises: VerticeInvalidoException se o vértice não existe no grafo
+        Args:
+            V (str): O vértice a ser analisado
+        
+        Returns:
+            contem_no(list)
+
+        Raises:
+            VerticeInvalidoException: Erro caso não existe o vértice no grafo.
         '''
         if V not in self.N:
             raise VerticeInvalidoException
@@ -85,10 +95,11 @@ class MeuGrafo(GrafoListaAdjacencia):
                 contem_no.append(a)
         return contem_no
 
-    def eh_completo(self):
-        '''
-        Verifica se o grafo é completo.
-        :return: Um valor booleano que indica se o grafo é completo
+    def eh_completo(self) -> bool:
+        '''Verifica se o grafo é completo.
+
+        Returns: 
+            bool
         '''
         if self.ha_laco():
             return False
@@ -104,10 +115,11 @@ class MeuGrafo(GrafoListaAdjacencia):
                 all_graus.append(grau_n)
         return True
 
-    def make_ajd_list(self):
-        '''
-        Fornecee uma lista de adjacência a partir do dicionário de arestas
-        :return: Uma lista com as adjacências de cada vértice
+    def make_ajd_list(self) -> defaultdict[List]:
+        '''Fornecee uma lista de adjacência a partir do dicionário de arestas
+
+        Returns:
+            adj_list(defaultdict[List])
         '''
         adj_list = defaultdict(list)
         for n in self.N:
@@ -117,42 +129,48 @@ class MeuGrafo(GrafoListaAdjacencia):
                 adj_list[n].append(v)
         return adj_list
         
-    def BFS(self, V=""):
-        '''
-        Executa a busca em largura em um grafo a partir de um nó dado
-        :param V: Vértice por onde inicia a busca
-        :return: Retorna um grafo com o caminho percorrido na busca
-        :raises: VerticeInvalidoException se o vértice não existe no grafo
+    def BFS(self, V: str = "") -> MeuGrafo:
+        '''Executa a busca em largura em um grafo a partir de um nó dado
+
+        Args:
+            V(str, optional): Vértice por onde inicia a busca
+
+        Returns:
+            bsf(MeuGrafo): Um novo grafo com o caminho BFS
+
+        Raises:
+            VerticeInvalidoException: Erro caso não existe o vértice no grafo.
         '''
         if V not in self.N:
             raise VerticeInvalidoException
-        queue = [V]
-        visited = [V]
+        queue = deque([V])
+        visited = dict.fromkeys([V])
         adj_list = self.make_ajd_list()
         adj_dict = {i: self.arestas_sobre_vertice(i) for i in self.N}
         path = []
         while queue:
-            v = queue.pop(0)
+            v = queue.popleft()
             for neighbor in adj_list[v]:
                 if neighbor not in visited:
-                    visited.append(neighbor)
+                    visited[neighbor] = None
                     queue.append(neighbor)
                     set_1, set_2 = set(adj_dict[v]), set(adj_dict[neighbor])
                     intersection = sorted(list(set_1.intersection(set_2)))[0]
                     path.append((v, neighbor, intersection))
-        bfs = MeuGrafo(list(visited))
+        bfs = MeuGrafo(list(visited.keys()))
         for v1, v2, e in path:
             bfs.adicionaAresta(e, v1, v2)
         return bfs
 
-    def DFS_util(self, adj_list, visited, adj_dict,node, edges):
-        '''
-        Executa a busca em profundidade em um grafo a partir de um nó dado
-        :param adj_list: Lista de adjacências
-        :param visited: Lista com nós que já foram visitados
-        :param adj_dict: Dicionário de aresta
-        :param node: Vértice atual
-        :param edges: Lista que guarda uma tupla, com o vértice não visitado, seu vizinho e a aresta que incide sobre ambos
+    def DFS_util(self, adj_list: defaultdict[List], visited: List, adj_dict: Dict, node: str, edges: List) -> None:
+        '''Executa a busca em profundidade em um grafo a partir de um nó dado
+
+        Args:
+            adj_list(defaultdict[List]): Lista de adjacências
+            visited(List): Lista com nós que já foram visitados
+            adj_dict(Dict): Dicionário de aresta
+            node(str): Vértice por onde inicia a busca
+            edges(List): Lista que guarda uma tupla, com o vértice não visitado, seu vizinho e a aresta que incide sobre ambos
         '''
         visited.append(node)
         for neighbor in adj_list[node]:
@@ -162,12 +180,18 @@ class MeuGrafo(GrafoListaAdjacencia):
                 edges.append((node, neighbor, intersection))
                 self.DFS_util(adj_list, visited, adj_dict,neighbor, edges)
 
-    def DFS(self, V=""):
+    def DFS(self, V: str = "") -> MeuGrafo:
         '''
         Fornece parâmetros necessários para execução do algoritmo DFS
-        :param V: O vértice de onde inicia a busca
-        :return: Retorna um grafo com o caminho percorrido na busca
-        :raises: VerticeInvalidoException se o vértice não existe no grafo
+
+        Args:
+            V(str, optional): O vértice de onde inicia a busca
+
+        Returns:
+            dfs(MeuGrafo): Um novo grafo com o caminho percorrido na DFS
+
+        Raises:
+            VerticeInvalidoException: Erro caso não existe o vértice no grafo.
         '''
         if V not in self.N:
             raise VerticeInvalidoException
@@ -177,15 +201,16 @@ class MeuGrafo(GrafoListaAdjacencia):
         edges = list()
         self.DFS_util(adj_list, visited, adj_dict,V, edges)
         
-        dfs = MeuGrafo(visited)
+        dfs = MeuGrafo(list(visited))
         for v1, v2, e in edges:
             dfs.adicionaAresta(e, v1, v2)
         return dfs
 
     def conexo(self):
-        """
-        Responde se um grafo é conexo ou não
-        :return: Um valor booleano que indica se o grafo é conexo
+        """Responde se um grafo é conexo ou não
+
+        Returns:
+            bool
         """
         vertices = deepcopy(self.N)
         dfs = self.DFS(vertices[0])
@@ -193,15 +218,16 @@ class MeuGrafo(GrafoListaAdjacencia):
         qt_vert_grafo = len(vertices)
         return qt_vert_dfs == qt_vert_grafo
 
-    def caminho_dois_vertices_dfs(self, u, d, visited, path, possible_paths, adj_list):
-        """
-        Armazena todos os caminhos entre dois vértices
-        :param u: Vértice atual
-        :param d: Vértice que queremos chegar
-        :param visited: Dicionário no formato -> vértice (chave): Valor booleano que indica se esse vértice já foi visitado (valor)
-        :param path: Lista com um caminhos entre dois vértices
-        :param possible_paths: Lista com a lista dos possíveis caminhos entre dois vértices
-        :param adj_list: Lista de adjacência 
+    def caminho_dois_vertices_dfs(self, u: str, d: str, visited: Dict, path: List, possible_paths: List[List], adj_list: defaultdict[List]) -> None:
+        """Armazena todos os caminhos entre dois vértices
+
+        Args:
+            u(str): Vértice atual
+            d(str): Vértice que queremos chegar
+            visited(Dict): Dicionário no formato -> vértice (chave): Valor booleano que indica se esse vértice já foi visitado (valor)
+            path(List): Lista com um caminhos entre dois vértices
+            possible_paths(List[List]): Lista com a lista dos possíveis caminhos entre dois vértices
+            adj_list(default[List]): Lista de adjacência 
         """
         visited[u] = True
         path.append(u)
@@ -214,13 +240,16 @@ class MeuGrafo(GrafoListaAdjacencia):
         path.pop()
         visited[u] = False
 
-    def caminho_dois_vertices(self, source, target, adj_list):
-        """
-        Busca todos os caminhos existentes entre dois vértices
-        :param source: Vértice inicial
-        :param target: Vértice final
-        :param adj_list: Lista de adjacência
-        :return: Lista contendo as listas dos possíveis caminhos
+    def caminho_dois_vertices(self, source: str, target: str, adj_list: defaultdict[List]) -> List:
+        """Busca todos os caminhos existentes entre dois vértices
+
+        Args:
+            source(str): Vértice inicial
+            target(str): Vértice final
+            adj_list(str): Lista de adjacência
+        
+        Returns:
+            possible_path(List): Lista contendo as listas dos possíveis caminhos
         """
         visited = {i: False for i in self.N}
         path = []
@@ -228,11 +257,14 @@ class MeuGrafo(GrafoListaAdjacencia):
         self.caminho_dois_vertices_dfs(source, target, visited, path, possible_path, adj_list)
         return possible_path
 
-    def caminho(self, n):
-        """
-        Busca um caminho de tamanho n em um grafo
-        :param n: Tamanho do caminho que será buscado
-        :return: Se houver um caminho com o tamanho solicitado é retornado esse caminho. Senão, é retornado um valor booleano
+    def caminho(self, n: int) -> Union[List, bool]:
+        """Busca um caminho de tamanho n em um grafo
+
+        Args:
+            n(int): Tamanho do caminho que será buscado
+
+        Returns:
+            path(List) | bool: Caminho com o tamanho solicitado | False
         """
         vertices = deepcopy(self.N)
         comb_vertices = list(combinations(vertices, 2))
@@ -262,87 +294,91 @@ class MeuGrafo(GrafoListaAdjacencia):
             return path_n
         return False
 
-    def ha_ciclo_dfs(self, v, visited, parent, adj_list, path):
-        """
-        Percorre o grafo buscando um ciclo
-        :param v: Vértice atual
-        :param visited: Dicionário com chaves sendo os vértices do grafo e valor sendo um valor booleano
-        :param parent: Lista com com os vértices visitados
-        :param adj_list: Lista de adjacência
-        :param path: Lista com vértices que pertecem ao ciclo
+    def ha_ciclo_dfs(self, v: str, visited: Dict, parent: Union[int, str], adj_list: defaultdict[List], path: List) -> bool:
+        """Percorre o grafo buscando um ciclo
+
+        Args:
+            v: Vértice atual
+            visited: Dicionário com chaves sendo os vértices do grafo e valor sendo um valor booleano
+            parent: Vértice pai
+            adj_list: Lista de adjacência
+            path: Lista com vértices que pertecem ao ciclo
+
+        Returns: 
+            bool
         """
         visited[v] = True
         for i in adj_list[v]:
-            if not (len(path) > 1 and path[0] == path[-1]):
-                if visited[i] == False:
-                    if self.ha_ciclo_dfs(i, visited, v, adj_list, path):
-                        path.append(i)
-                        return True
-                elif parent != i:
+            if visited[i] == False:
+                if self.ha_ciclo_dfs(i, visited, v, adj_list, path):
                     path.append(i)
                     return True
-            else:
+            elif parent != i:
+                path.append(i)
                 return True
         return False
 
-    def ha_ciclo(self):
-        """
-        Busca um ciclo em grafo
-        :return: Se houver um ciclo, ele será retornado. Caso contrário, é retornado um valor booleano False
+    def ha_ciclo(self) -> Union[List, bool]:
+        """Busca um ciclo em grafo
+
+        Returns:
+            path(List) | bool
         """
         adj_list = self.make_ajd_list()
         visited = {i: False for i in adj_list.keys()}
         achou_ciclo = False
         caminho_vertices = []
-        if (self.ha_ciclo_dfs(self.N[0], visited, None, adj_list, caminho_vertices)) == True:
-            achou_ciclo = True        
+        for n in adj_list.keys():
+            if visited[n] == False:
+                if (self.ha_ciclo_dfs(n, visited, -1, adj_list, caminho_vertices)) == True:
+                    achou_ciclo = True
+                    break
         if achou_ciclo:
             path = []
+            caminho_limpo = []
+            v_inicio = caminho_vertices[0]
+            count = 0
+            for k in caminho_vertices:
+                if k == v_inicio:
+                    count += 1
+                    caminho_limpo.append(k)
+                    if count == 2:
+                        break
+                else:
+                    caminho_limpo.append(k)
             adj_a = {i: self.arestas_sobre_vertice(i) for i in self.N}
-            if len(caminho_vertices) == 1:
-                v = caminho_vertices[0]
-                aresta_sobre_v1 = adj_a[v]
-                aresta_sobre_v2 = adj_a[v]
-                aresta_adj = sorted(list(set(aresta_sobre_v1).intersection(set(aresta_sobre_v2))))[0]
-                path.append(v)
-                path.append(aresta_adj)
-                path.append(v)
-                return path
-            while caminho_vertices[0] not in adj_list[caminho_vertices[-1]]:
-                caminho_vertices.pop()
-
-            if caminho_vertices[0] != caminho_vertices[-1]:
-                caminho_vertices.append(caminho_vertices[0])
-            for a in range(len(caminho_vertices) - 1):
-                v1, v2 = caminho_vertices[a], caminho_vertices[a + 1]
+            if caminho_limpo[0] != caminho_limpo[-1]:
+                caminho_limpo.append(caminho_limpo[0])
+            for a in range(len(caminho_limpo) - 1):
+                v1, v2 = caminho_limpo[a], caminho_limpo[a + 1]
                 aresta_sobre_v1 = adj_a[v1]
                 aresta_sobre_v2 = adj_a[v2]
-                aresta_adj = sorted(list(set(aresta_sobre_v1).intersection(set(aresta_sobre_v2))))[0]
+                aresta_adj = sorted(list(set(aresta_sobre_v1).intersection(set(aresta_sobre_v2))))
                 if a == 0:
                     path.append(v1)
-                path.append(aresta_adj)
+                path.append(aresta_adj[0])
                 path.append(v2)
-                adj_a[v1].remove(aresta_adj)
-                adj_a[v2].remove(aresta_adj)
             return path
         return False
 
-    def add_edge(self, v, u, adj_list):
-        """
-        Adiciona um vértice a lista de adjacências
-        :param v: Vértice que será adicionado
-        :param u: Vértice que será adicionado
-        :param adj_list: lista de adjacências
+    def add_edge(self, v: str, u: str, adj_list: defaultdict[List]) -> None:
+        """Adiciona um vértice a lista de adjacências
+
+        Args:
+            v(str): Vértice que será adicionado
+            u(str): Vértice que será adicionado
+            adj_list(defaultdict[List]): lista de adjacências
         """
         adj_list[v].append(u)
         adj_list[u].append(v)
 
-    def remove_edge(self, v, u, adj_list):
-        """
-        Remove um vértice de uma lista de adjacência
-        :param v: Vértice que será removido
-        :param u: Vértice que será removido
-        :param adj_list: lista de adjacências
+    def remove_edge(self, v: str, u: str, adj_list: defaultdict[List]):
+        """Remove um vértice de uma lista de adjacência
+
+        Args:
+            v(str): Vértice que será adicionado
+            u(str): Vértice que será adicionado
+            adj_list(defaultdict[List]): lista de adjacências
         """
         for i in range(len(adj_list[v])):
             if adj_list[v][i] == u:
@@ -356,13 +392,16 @@ class MeuGrafo(GrafoListaAdjacencia):
                 adj_list[u].pop()
                 break
 
-    def count_connected_vertecies(self, u, visited, adj_list):
-        """
-        Conta a quantidade de vértices que estão conectados em um vértice inicial
-        :param u: Vértice atual
-        :param visited: Dicionário com os vértices que foram visitados
-        :param adj_list: lista de adjacências
-        :return: Quantidade de vértices que estão conectados ao primeiro vértice
+    def count_connected_vertecies(self, u: str, visited: Dict, adj_list: defaultdict[List]) -> int:
+        """Conta a quantidade de vértices que estão conectados em um vértice inicial
+
+        Args:
+            u(str): Vértice atual
+            visited(Dict): Dicionário com os vértices que foram visitados
+            adj_list(defaultdict[List]): lista de adjacências
+
+        Returns:
+            Quantidade de vértices que estão conectados ao primeiro vértice
         """
         visited[u] = True
         count = 1
@@ -371,13 +410,16 @@ class MeuGrafo(GrafoListaAdjacencia):
                 count += self.count_connected_vertecies(v, visited, adj_list)
         return count
     
-    def is_valid_edge(self, v, u, adj_list):
-        """
-        Avalia se uma aresta é uma ponte ou não
-        :param v: Vértice de inicio
-        :param u: Vértice que está ligado com v
-        :param adj_list: lista de adjacências
-        :return: Um valor booleano indicando se temos uma aresta válida ou não 
+    def is_valid_edge(self, v: str, u: str, adj_list: defaultdict[List]) -> bool:
+        """Avalia se uma aresta é uma ponte ou não
+
+        Args:
+            v(str): Vértice de inicio
+            u(str): Vértice que está ligado com v
+            adj_list(defaultdict[List]): lista de adjacências
+
+        Returns:
+            bool 
         """
         c1, c2 = 0, 0
         self.remove_edge(v, u, adj_list)
@@ -389,12 +431,13 @@ class MeuGrafo(GrafoListaAdjacencia):
         if c2 == c1: return True
         return False
 
-    def get_vertex(self, v, adj_list, path):
-        """
-        Adiciona os vértices presentes no caminho euleriano
-        :param v: Vértice de inicio
-        :param adj_list: lista de adjacências
-        :param path: Lista contendo os vértices presente no caminho euleriano
+    def get_vertex(self, v: str, adj_list: defaultdict[List], path: List) -> None:
+        """Adiciona os vértices presentes no caminho euleriano
+
+        Args:
+            v(str): Vértice de inicio
+            adj_list(defaultdict[List]): lista de adjacências
+            path(List): Lista contendo os vértices presente no caminho euleriano
         """
         path.append(v)
         if len(adj_list[v]) == 0:
@@ -410,12 +453,15 @@ class MeuGrafo(GrafoListaAdjacencia):
                 self.get_vertex(u, adj_list, path)
                 return
 
-    def make_a_path(self, v_list, adj_edge):
-        """
-        Gera o caminho euleriano
-        :param v_list: Lista contendo os vértices do caminho euleriano
-        :param adj_edge: Dicionário contendo as arestas sobre o vértice
-        :return: Retorna uma lista no formato: Vértice, aresta, Vértice...
+    def make_a_path(self, v_list: List, adj_edge: defaultdict[List]) -> List:
+        """Gera o caminho euleriano
+
+        Args:
+            v_list(List): Lista contendo os vértices do caminho euleriano
+            adj_edge(defaultdict[List]): Dicionário contendo as arestas sobre o vértice
+
+        Returns:
+            path(List): Lista com os vértices do caminho euleriano
         """
         path = []
         for v in range(len(v_list)- 1):
@@ -438,10 +484,11 @@ class MeuGrafo(GrafoListaAdjacencia):
                 adj_edge[v2].remove(aresta_adj)
         return path
 
-    def euler_path_circuit(self):
-        """
-        Função de setup para a busca do caminho euleriano
-        :returns: Caso seja encontrado um caminho euleriano, é retornado uma lista. Caso contrário, é retornado um valor booleano False
+    def euler_path_circuit(self) -> Union[List, bool]:
+        """Função de setup para a busca do caminho euleriano
+
+        Returns:
+            List | False(bool)
         """
         if not self.conexo():
             return False

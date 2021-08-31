@@ -5,10 +5,11 @@ from bibgrafo.grafo_exceptions import *
 class MeuGrafo(GrafoMatrizAdjacenciaNaoDirecionado):
 
     def vertices_nao_adjacentes(self):
-        '''
-        Provê uma lista de vértices não adjacentes no grafo. A lista terá o seguinte formato: [X-Z, X-W, ...]
+        '''Provê uma lista de vértices não adjacentes no grafo. A lista terá o seguinte formato: [X-Z, X-W, ...].
         Onde X, Z e W são vértices no grafo que não tem uma aresta entre eles.
-        :return: Uma lista com os pares de vértices não adjacentes
+
+        Returns:
+            vertex_combinations(list)
         '''
         lista_nao_adj = []
         for i in range(len(self.M)):
@@ -22,9 +23,10 @@ class MeuGrafo(GrafoMatrizAdjacenciaNaoDirecionado):
         return lista_nao_adj
 
     def ha_laco(self):
-        '''
-        Verifica se existe algum laço no grafo.
-        :return: Um valor booleano que indica se existe algum laço.
+        '''Verifica se existe algum laço no grafo.
+
+        Returns:
+            bool
         '''
         for i in range(len(self.M)):
             if len(self.M[i][i]) > 0:
@@ -33,11 +35,16 @@ class MeuGrafo(GrafoMatrizAdjacenciaNaoDirecionado):
 
 
     def grau(self, V=''):
-        '''
-        Provê o grau do vértice passado como parâmetro
-        :param V: O rótulo do vértice a ser analisado
-        :return: Um valor inteiro que indica o grau do vértice
-        :raises: VerticeInvalidoException se o vértice não existe no grafo
+        '''Provê o grau do vértice passado como parâmetro.
+
+        Args:
+            V (str, optional): O rótulo do vértice a ser analisado.
+        
+        Returns:
+            grau(int)
+        
+        Raises:
+            VerticeInvalidoException: Erro caso não existe o vértice no grafo.
         '''
         if V not in self.N:
             raise VerticeInvalidoException()
@@ -54,9 +61,10 @@ class MeuGrafo(GrafoMatrizAdjacenciaNaoDirecionado):
         return grau
 
     def ha_paralelas(self):
-        '''
-        Verifica se há arestas paralelas no grafo
-        :return: Um valor booleano que indica se existem arestas paralelas no grafo.
+        ''' Verifica se há arestas paralelas no grafo
+
+        Returns:
+            bool
         '''
         for i in range(len(self.M)):
             for j in range(len(self.M)):
@@ -66,11 +74,16 @@ class MeuGrafo(GrafoMatrizAdjacenciaNaoDirecionado):
         return False
 
     def arestas_sobre_vertice(self, V):
-        '''
-        Provê uma lista que contém os rótulos das arestas que incidem sobre o vértice passado como parâmetro
-        :param V: O vértice a ser analisado
-        :return: Uma lista os rótulos das arestas que incidem sobre o vértice
-        :raises: VerticeInvalidoException se o vértice não existe no grafo
+        '''Provê uma lista que contém os rótulos das arestas que incidem sobre o vértice passado como parâmetro
+
+        Args:
+            V (str): O vértice a ser analisado
+        
+        Returns:
+            contem_no(list)
+
+        Raises:
+            VerticeInvalidoException: Erro caso não existe o vértice no grafo.
         '''
         if V not in self.N:
             raise VerticeInvalidoException()
@@ -88,9 +101,10 @@ class MeuGrafo(GrafoMatrizAdjacenciaNaoDirecionado):
         
 
     def eh_completo(self):
-        '''
-        Verifica se o grafo é completo.
-        :return: Um valor booleano que indica se o grafo é completo
+        '''Verifica se o grafo é completo.
+
+        Returns: 
+            bool
         '''
         if self.ha_laco():
             return False
