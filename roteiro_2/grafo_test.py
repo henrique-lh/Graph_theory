@@ -509,7 +509,6 @@ class TestGrafo(unittest.TestCase):
         self.g_c_j_bfs.adicionaAresta('a1', 'J', 'C')
         self.g_c_j_bfs.adicionaAresta('a2', 'J', 'E')
         self.g_c_j_bfs.adicionaAresta('a3', 'J', 'P')
-        self.g_c_j_bfs.adicionaAresta('a6', 'C', 'E')
 
         self.spire_graph2_6_bfs = MeuGrafo(["6", "2", "0", "4"])
         self.spire_graph2_6_bfs.adicionaAresta('c', '6', '2')
