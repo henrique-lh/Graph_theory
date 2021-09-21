@@ -6,6 +6,8 @@ from collections import defaultdict, deque
 from itertools import combinations
 from typing import Dict, List, Union, Tuple
 from copy import deepcopy
+import heapq
+import math
 
 class MeuGrafo(GrafoListaAdjacencia):
 
@@ -511,3 +513,168 @@ class MeuGrafo(GrafoListaAdjacencia):
             return self.make_a_path(aux, adj_edge)
         else:
             return False
+
+    def __heap(self) -> List[Tuple]:
+        """Gera uma fila de prioridade com os vértices do grafo
+
+        Returns:
+            List[Tuple]: Lista de arestas ordenadas pelo peso
+        """
+        ed = []
+        for a in self.A:
+            nome, peso, v1, v2 = a, self.A[a].getPeso(), self.A[a].getV1(), self.A[a].getV2()
+            par = (peso, nome, v1, v2)
+            heapq.heappush(ed, par)
+        return ed
+
+    def MST_prim(self) -> Union[MeuGrafo, bool]:
+        """Gera árvore mínima de um grafo, caso exita
+
+        Returns:
+            Union[MeuGrafo, False]: Árvore gerada | Valor booleano indicando que a árvore não existe
+        """
+        if not self.conexo():
+            return False
+
+        tree = MeuGrafo()
+        ed = self.__heap()
+        u = heapq.heappop(ed)
+        v = u[2]
+        tree.adicionaVertice(v)
+        mst_vertices = set([v])
+        heapq.heappush(ed, u)
+        temp = deque()
+        while len(tree.N) < len(self.N):
+            aresta = heapq.heappop(ed)
+            peso, nome, v1, v2 = aresta
+            v_tree, v_out = (v1, v2) if v1 in mst_vertices else (v2, v1)
+            if v_tree in mst_vertices and v_out not in mst_vertices:
+                tree.adicionaVertice(v_out)
+                tree.adicionaAresta(nome, v_tree, v_out, peso)
+                mst_vertices.add(v_out)
+                for i in temp:
+                    heapq.heappush(ed, i)
+                temp.clear()
+            elif v_tree not in mst_vertices and v_out not in mst_vertices:
+                temp.append(aresta)
+        return tree
+
+    def menor_aresta(self, arestas: List[Tuple]) -> Union[Tuple, None]:
+        """Encontra a aresta com o menor peso
+
+        Args:
+            arestas (List[Tuple]): Lista com as arestas e seus respectivos pesos
+
+        Returns:
+            Union[Tuple, None]: Aresta com menor peso | None
+        """
+        anterior = None
+        ind = 0
+        linha_matriz = 0
+        for i in arestas:
+            if i:
+                atual = heapq.heappop(i)
+                if anterior:
+                    if atual[0] < anterior[0]:
+                        heapq.heappush(arestas[ind], anterior)
+                        anterior = atual
+                        ind = linha_matriz
+                    else:
+                        heapq.heappush(arestas[ind], atual)
+                else:
+                    anterior = atual
+                    ind = linha_matriz
+            linha_matriz += 1
+        return anterior
+            
+
+    def find(self, x: str, pai: Dict) -> str:
+        """Determina a qual conjunto um determinado elemento pertence
+
+        Args:
+            x (str): Nó filho
+            pai (Dict): Dicionário que guarda o pai de cada filho
+
+        Returns:
+            str: Retorna o pai de um nó
+        """
+        if pai[x] == x:
+            return x
+        pai[x] = self.find(pai[x], pai)
+        return self.find(pai[x], pai)
+
+    def union(self, x: str, y: str, pai: Dict, pesos: Dict) -> None:
+        """Combina ou agrupa dois conjuntos em um único conjunto
+
+        Args:
+            x (str): Elemento de um dos conjuntos
+            y (str): Elemento de um dos conjuntos
+            pai (Dict): Dicionário que guarda o pai de cada filho
+            pesos (Dict): Dicionário que guarda o peso de uma aresta
+        """
+        x = self.find(x, pai)
+        y = self.find(y, pai)
+        if x == y:
+            return
+        if pesos[x] < pesos[y]:
+            pai[x] = y
+        if pesos[x] > pesos[y]:
+            pai[y] = x
+        if pesos[x] == pesos[y]:
+            pai[x] = y
+            pesos[y] = pesos[y] + 1
+
+
+    def bucket_cost(self, minimal: int, maximal: int, b: int, edge_cost: int) -> int:
+        """Calcula onde será posicionada uma aresta na fila de prioridade
+
+        Args:
+            minimal (int): Menor peso do conjunto de arestas
+            maximal (int): Maior peso do conjunto de arestas
+            b (int): Quantidade de espaços na fila de prioridade
+            edge_cost (int): Peso de uma aresta
+
+        Returns:
+            int: Posição da aresta na fila de prioridade
+        """
+        j_edge = math.floor((((edge_cost - minimal) / (maximal - minimal)) * (b - 1))) + 1
+        return j_edge
+
+    def MST_kruskal(self) -> Union[MeuGrafo, False]:
+        """Gera árvore mínima de um grafo, caso exita
+
+        Returns:
+            Union[MeuGrafo, False]: Árvore gerada | Valor booleano indicando que a árvore não existe
+        """
+        if not self.conexo():
+            return False
+        min_cost = self.A[min(self.A.keys(), key=lambda x: self.A[x].getPeso())].getPeso()
+        max_cost = self.A[max(self.A.keys(), key=lambda x: self.A[x].getPeso())].getPeso()
+        b = (max_cost - min_cost) / len(self.A)
+        quantidade_intervalos = math.floor((max_cost - min_cost) / b)
+        arestas = [[] for i in range(quantidade_intervalos + 1)]
+        ed = self.__heap()
+        for a in ed:
+            peso = a[0]
+            bucket = self.bucket_cost(min_cost, max_cost, quantidade_intervalos, peso)
+            arestas[bucket].append(a)
+    
+        tree = MeuGrafo()
+        mst_vertices = set()
+        union_find = {i: i for i in self.N}
+        pesos = {i: 0 for i in self.N}
+        while len(tree.A) < len(self.N) - 1:
+            atual = self.menor_aresta(arestas)
+            if self.find(atual[2], union_find) != self.find(atual[3], union_find):
+                peso, nome, v1, v2 = atual
+                if v1 not in mst_vertices:
+                    tree.adicionaVertice(v1)
+                    mst_vertices.add(v1)
+                if v2 not in mst_vertices:
+                    tree.adicionaVertice(v2)
+                    mst_vertices.add(v2)
+                tree.adicionaAresta(nome, v1, v2, peso)
+                self.union(v1, v2, union_find, pesos)
+        return tree
+
+
